@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aplikasi Hitung Sharing Offline</title>
+  
+  <!-- Link ke Manifest untuk PWA -->
+  <link rel="manifest" href="manifest-hitung.json">
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --secondary: #64748b;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --danger: #ef4444;
+      --success: #10b981;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
+      margin-bottom: 24px;
+    }
+
+    .header-icon .material-icons { font-size: 40px; }
+    .header-text h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.5px; }
+    .header-text p { font-size: 12px; opacity: 0.9; margin: 0; }
+    
+    .offline-badge {
+      margin-left: auto; background: rgba(255,255,255,0.2);
+      padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 600;
+    }
+
+    .container { max-width: 500px; margin: 0 auto; padding: 0 16px; }
+    
+    .section-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; }
+
+    .chip-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .chip {
+      background: #e0f2fe; color: var(--primary-dark);
+      border: 1px solid #bae6fd; border-radius: 20px;
+      padding: 6px 14px; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif;
+    }
+    .chip:active { transform: scale(0.95); background: #bae6fd; }
+
+    .card {
+      background: var(--card-bg); border-radius: var(--radius);
+      padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid var(--border); margin-bottom: 20px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
+    
+    .select-wrapper, .input-icon-wrapper { position: relative; }
+    
+    select, input[type="text"] {
+      width: 100%; height: 48px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-family: 'Poppins', sans-serif;
+      font-size: 14px; color: var(--text-main); transition: all 0.2s;
+      background: #fff;
+    }
+    
+    select { padding: 0 40px 0 16px; appearance: none; cursor: pointer; }
+    input[type="text"] { padding: 0 16px 0 48px; font-weight: 600; }
+    
+    select:focus, input[type="text"]:focus {
+      outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+    }
+    
+    .select-icon { position: absolute; right: 12px; top: 12px; color: var(--text-muted); pointer-events: none; }
+    .currency-prefix {
+      position: absolute; left: 16px; top: 12px; font-size: 14px;
+      font-weight: 600; color: var(--text-muted); pointer-events: none;
+    }
+
+    .button-group { display: flex; gap: 12px; margin-top: 24px; }
+    .btn {
+      flex: 1; height: 48px; border: none; border-radius: 8px;
+      font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }
+    .btn-primary:active { background: var(--primary-dark); transform: translateY(2px); }
+    .btn-secondary { background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-secondary:active { background: #e2e8f0; }
+
+    .result-card { border: 2px solid var(--primary); background: #f0f9ff; display: none; }
+    .result-title { font-size: 16px; font-weight: 700; color: var(--primary-dark); margin-bottom: 16px; text-align: center; }
+    
+    .detail-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; }
+    .detail-row span { color: var(--text-muted); }
+    .detail-row strong { color: var(--text-main); }
+    
+    .highlight-box { background: var(--primary); color: white; padding: 16px; border-radius: 8px; text-align: center; margin-top: 16px; }
+    .highlight-box span { display: block; font-size: 11px; font-weight: 500; opacity: 0.9; margin-bottom: 4px; }
+    .highlight-box h3 { font-size: 24px; margin: 0; font-weight: 700; }
+    
+    .formula-box { background: #fff; border-radius: 8px; padding: 12px; margin-top: 12px; display: flex; gap: 10px; border: 1px solid var(--border); }
+    .formula-box .material-icons { color: var(--primary); font-size: 20px; }
+    .formula-box p { font-size: 11px; color: var(--text-muted); margin: 0; line-height: 1.4; }
+
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-item { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+    .history-item .info { display: flex; flex-direction: column; gap: 4px; }
+    .history-item .badge { background: #e0f2fe; color: var(--primary-dark); font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 600; width: fit-content; }
+    .history-item .date { font-size: 10px; color: var(--text-muted); }
+    .history-item .amount { font-size: 14px; font-weight: 700; color: var(--primary-dark); }
+
+    #snackbar {
+      visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center;
+      border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px;
+      transform: translateX(-50%); font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    #snackbar.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+    @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+    @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-icon">
+      <span class="material-icons">local_hospital</span>
+    </div>
+    <div class="header-text">
+      <h1>APLIKASI HITUNG SHARING</h1>
+      <p>Kasir Rawat Inap &bull; RSBA Brebes</p>
+    </div>
+    <div class="offline-badge">OFFLINE</div>
+  </header>
+
+  <main class="container">
+    
+    <section class="quick-sim-section">
+      <p class="section-title">Simulasi Cepat</p>
+      <div class="chip-container">
+        <button class="chip" onclick="quickSim('3', '2')">Kls 3 &rarr; 2 (Tolak)</button>
+        <button class="chip" onclick="quickSim('3', '1')">Kls 3 &rarr; 1 (Tolak)</button>
+        <button class="chip" onclick="quickSim('2', '1')">Kls 2 &rarr; 1</button>
+        <button class="chip" onclick="quickSim('2', 'VIP')">Kls 2 &rarr; VIP</button>
+        <button class="chip" onclick="quickSim('1', 'VIP')">Kls 1 &rarr; VIP</button>
+      </div>
+    </section>
+
+    <div class="card">
+      <form id="calcForm" onsubmit="handleHitung(event)">
+        
+        <div class="form-group">
+          <label>Hak Kelas Peserta</label>
+          <div class="select-wrapper">
+            <select id="hakKelas" required onchange="toggleInputs()">
+              <option value="" disabled selected>Pilih Hak Kelas</option>
+              <option value="3">Kelas III</option>
+              <option value="2">Kelas II</option>
+              <option value="1">Kelas I</option>
+            </select>
+            <span class="material-icons select-icon">expand_more</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Kelas Tujuan (Dipilih)</label>
+          <div class="select-wrapper">
+            <select id="kelasTujuan" required onchange="toggleInputs()">
+              <option value="" disabled selected>Pilih Kelas Tujuan</option>
+              <option value="2">Kelas II</option>
+              <option value="1">Kelas I</option>
+              <option value="VIP">VIP</option>
+              <option value="VVIP">VVIP</option>
+            </select>
+            <span class="material-icons select-icon">expand_more</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tarif INA-CBG (Sesuai Hak Kelas)</label>
+          <div class="input-icon-wrapper">
+            <span class="currency-prefix">Rp</span>
+            <input type="text" id="tarifHak" inputmode="numeric" placeholder="0" required onkeyup="formatInput(this)">
+          </div>
+        </div>
+
+        <div class="form-group" id="groupTarifKelas1" style="display: none;">
+          <label>Tarif INA-CBG (Kelas 1)</label>
+          <div class="input-icon-wrapper">
+            <span class="currency-prefix">Rp</span>
+            <input type="text" id="tarifKelas1" inputmode="numeric" placeholder="0" onkeyup="formatInput(this)">
+          </div>
+        </div>
+
+        <div class="form-group" id="groupBiayaRS" style="display: none;">
+          <label>Total Biaya RS (Tagihan Real)</label>
+          <div class="input-icon-wrapper">
+            <span class="currency-prefix">Rp</span>
+            <input type="text" id="totalBiayaRS" inputmode="numeric" placeholder="0" onkeyup="formatInput(this)">
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+          <button type="submit" class="btn btn-primary" id="btnHitung">Hitung Biaya</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="resultCard" class="card result-card">
+      <h2 class="result-title">Hasil Kalkulasi</h2>
+      
+      <div class="result-details">
+        <div class="detail-row">
+          <span>Naik Kelas</span>
+          <strong id="resTujuan">Kelas 2 ke VIP</strong>
+        </div>
+        <div class="detail-row" id="rowTarifHak">
+          <span>Tarif Hak Kelas</span>
+          <strong id="resTarifHak">Rp 0</strong>
+        </div>
+        <div class="detail-row" id="rowTarifTujuan" style="display:none;">
+          <span>Tarif Kelas 1</span>
+          <strong id="resTarifTujuan">Rp 0</strong>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <span>TOTAL SHARING HARUS DIBAYAR PASIEN</span>
+        <h3 id="resSelisih">Rp 0</h3>
+      </div>
+      
+      <div class="formula-box">
+        <span class="material-icons">info</span>
+        <p id="resRumus">Penjelasan rumus tampil di sini.</p>
+      </div>
+    </div>
+
+    <section class="history-section">
+      <p class="section-title">Riwayat Lokal Terakhir</p>
+      <div id="historyList" class="history-list">
+      </div>
+    </section>
+
+  </main>
+
+  <div id="snackbar">Pesan Notifikasi</div>
+
+  <script>
+    const DB_KEY = 'History_Hitung_Sharing';
+
+    function formatInput(input) {
+      let angka = input.value.replace(/[^,\d]/g, '');
+      input.value = angka ? parseInt(angka).toLocaleString('id-ID') : '';
+    }
+
+    function parseRupiah(str) {
+      if (!str) return 0;
+      let angka = str.replace(/[^,\d]/g, '');
+      return parseInt(angka) || 0;
+    }
+
+    function formatRupiahRP(angka) {
+      return 'Rp ' + angka.toLocaleString('id-ID');
+    }
+
+    function showToast(msg, isError = false) {
+      const sb = document.getElementById("snackbar");
+      sb.innerText = msg;
+      sb.style.backgroundColor = isError ? "var(--danger)" : "#333";
+      sb.className = "show";
+      setTimeout(() => { sb.className = sb.className.replace("show", ""); }, 3000);
+    }
+
+    function toggleInputs() {
+      const hak = document.getElementById('hakKelas').value;
+      const tujuan = document.getElementById('kelasTujuan').value;
+      
+      const groupKls1 = document.getElementById('groupTarifKelas1');
+      const groupRS = document.getElementById('groupBiayaRS');
+      const inpKls1 = document.getElementById('tarifKelas1');
+      const inpRS = document.getElementById('totalBiayaRS');
+
+      groupKls1.style.display = 'none'; inpKls1.required = false;
+      groupRS.style.display = 'none'; inpRS.required = false;
+
+      if (hak === '3' && tujuan) {
+        showToast("Pasien Kelas 3 JKN tidak diperkenankan naik kelas!", true);
+        return;
+      }
+
+      if (tujuan === 'VIP' || tujuan === 'VVIP') {
+        groupKls1.style.display = 'block'; inpKls1.required = true;
+        groupRS.style.display = 'block'; inpRS.required = true;
+      } else if (hak === '2' && tujuan === '1') {
+        groupKls1.style.display = 'block'; 
+        inpKls1.required = true;
+        document.querySelector('#groupTarifKelas1 label').innerText = "Tarif INA-CBG (Kelas Tujuan / Kls 1)";
+      }
+    }
+
+    function quickSim(hak, tujuan) {
+      const h = document.getElementById('hakKelas');
+      const t = document.getElementById('kelasTujuan');
+      h.value = hak; t.value = tujuan;
+      
+      toggleInputs();
+      
+      if(hak === '3') {
+        document.getElementById('resultCard').style.display = 'none';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('calcForm').reset();
+      document.getElementById('resultCard').style.display = 'none';
+      toggleInputs();
+    }
+
+    function handleHitung(e) {
+      e.preventDefault();
+      
+      const hak = document.getElementById('hakKelas').value;
+      const tujuan = document.getElementById('kelasTujuan').value;
+      
+      if(hak === '3') return showToast("Gugur: Hak Kelas 3 tidak dapat naik kelas.", true);
+      if(hak === tujuan || (hak === '1' && tujuan === '2')) return showToast("Pilihan kelas tujuan tidak valid.", true);
+
+      const valHak = parseRupiah(document.getElementById('tarifHak').value);
+      const valKls1 = parseRupiah(document.getElementById('tarifKelas1').value);
+      const valRS = parseRupiah(document.getElementById('totalBiayaRS').value);
+
+      let selisih = 0; let rumusText = "";
+
+      if (hak === '2' && tujuan === '1') {
+        selisih = valKls1 - valHak;
+        if(selisih < 0) selisih = 0;
+        rumusText = `Rumus Kls 2 ke 1: (Tarif Kls 1 - Tarif Kls 2).<br>Rp ${valKls1.toLocaleString('id-ID')} - Rp ${valHak.toLocaleString('id-ID')}`;
+        document.getElementById('rowTarifTujuan').style.display = 'flex';
+      } else if (hak === '1' && (tujuan === 'VIP' || tujuan === 'VVIP')) {
+        let maxVIP = 0.75 * valKls1;
+        let tambahanRS = valRS - valKls1;
+        selisih = tambahanRS > maxVIP ? maxVIP : tambahanRS;
+        if(selisih < 0) selisih = 0;
+        rumusText = `Rumus Kls 1 ke VIP:<br>Tagihan RS dikurangi Tarif Kls 1 (Maksimal bayar 75% dari Tarif Kls 1).<br>Max 75%: Rp ${maxVIP.toLocaleString('id-ID')}`;
+        document.getElementById('rowTarifTujuan').style.display = 'flex';
+      } else if (hak === '2' && (tujuan === 'VIP' || tujuan === 'VVIP')) {
+        let selisihNaikKls1 = valKls1 - valHak;
+        if(selisihNaikKls1 < 0) selisihNaikKls1 = 0;
+        let maxVIP = 0.75 * valKls1;
+        let tambahanRS = valRS - valKls1;
+        let selisihVIP = tambahanRS > maxVIP ? maxVIP : tambahanRS;
+        if(selisihVIP < 0) selisihVIP = 0;
+        selisih = selisihNaikKls1 + selisihVIP;
+        rumusText = `Rumus Kls 2 ke VIP:<br>(Tarif Kls 1 - Kls 2) ditambah selisih VIP (Max 75% Tarif Kls 1).<br>Naik ke Kls 1: Rp ${selisihNaikKls1.toLocaleString('id-ID')}<br>Tambahan VIP: Rp ${selisihVIP.toLocaleString('id-ID')}`;
+        document.getElementById('rowTarifTujuan').style.display = 'flex';
+      }
+
+      document.getElementById('resTujuan').innerText = `Kelas ${hak} \u2192 ${tujuan}`;
+      document.getElementById('resTarifHak').innerText = formatRupiahRP(valHak);
+      document.getElementById('resTarifTujuan').innerText = formatRupiahRP(valKls1);
+      document.getElementById('resSelisih').innerText = formatRupiahRP(selisih);
+      document.getElementById('resRumus').innerHTML = rumusText;
+      
+      document.getElementById('resultCard').style.display = 'block';
+      document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'end' });
+      simpanRiwayat(hak, tujuan, selisih);
+    }
+
+    function simpanRiwayat(hak, tujuan, selisih) {
+      let history = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+      const now = new Date();
+      const newEntry = {
+        id: Date.now(),
+        tanggal: now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}),
+        desc: `Kls ${hak} to ${tujuan}`,
+        selisih: selisih
+      };
+      
+      history.unshift(newEntry);
+      if(history.length > 5) history.pop();
+      localStorage.setItem(DB_KEY, JSON.stringify(history));
+      tampilkanRiwayat();
+    }
+
+    function tampilkanRiwayat() {
+      const container = document.getElementById('historyList');
+      let history = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+      
+      container.innerHTML = '';
+      if(history.length === 0) {
+        container.innerHTML = '<p style="font-size:12px; color:var(--text-muted); text-align:center;">Belum ada kalkulasi tersimpan.</p>';
+        return;
+      }
+
+      history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+          <div class="info">
+            <span class="badge">${item.desc}</span>
+            <span class="date">${item.tanggal}</span>
+          </div>
+          <span class="amount">${formatRupiahRP(item.selisih)}</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.onload = function() {
+      tampilkanRiwayat();
+    }
+  </script>
+
+  <!-- Script Registrasi Service Worker PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registered:', registration);
+          })
+          .catch(error => {
+            console.log('ServiceWorker registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
